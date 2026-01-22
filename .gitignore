@@ -1,0 +1,25 @@
+# CMake build directory
+build/
+bin/
+lib/
+
+# Object files
+*.o
+*.obj
+
+# Libraries
+*.a
+*.so
+*.dylib
+*.dll
+
+# Executables
+test_bin
+le0n_test
+
+# IDE settings
+.vscode/
+.idea/
+
+# System files
+.DS_Store
