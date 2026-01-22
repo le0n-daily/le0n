@@ -23,3 +23,9 @@ le0n_test
 
 # System files
 .DS_Store
+
+# User specific
+.cache/
+.gdb_history
+log.txt
+Makefile

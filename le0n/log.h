@@ -198,3 +198,188 @@ public:
      *  %c 日志名称
      *  %t 线程id
      *  %n 换行
+     *  %d 时间
+     *  %f 文件名
+     *  %l 行号
+     *  %T 制表符
+     *  %F 协程id
+     *  %N 线程名称
+     *
+     *  默认格式 "%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"
+     */
+    LogFormatter(const std::string& pattern);
+
+    //%t    %thread_id %m%n
+    /**
+     * @brief 返回格式化日志文本
+     * @param[in] logger 日志器
+     * @param[in] level 日志级别
+     * @param[in] event 日志事件
+     */
+    std::string format(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);
+
+public:
+    // 内部类：格式化子项（抽象基类）
+    // 例如：MessageFormatItem 负责输出消息，LevelFormatItem 负责输出级别
+    class FormatItem{
+        public:
+            typedef std::shared_ptr<FormatItem> ptr;
+            virtual ~FormatItem() {}
+            /**
+            * @brief 格式化日志到流
+            * @param[in, out] os 日志输出流
+            * @param[in] logger 日志器
+            * @param[in] level 日志等级
+            * @param[in] event 日志事件
+            */
+            virtual void format(std::ostream& os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) = 0;
+    };
+    /**
+     * @brief 初始化,解析日志模板
+     * @details 将 pattern 字符串解析成一个个 FormatItem
+     */
+    void init();
+private:
+    std::string m_pattern;                  // 日志模板
+    std::vector<FormatItem::ptr> m_items;   // 解析后的格式项列表
+};
+
+/**
+ * @brief 日志输出目标（基类）：定义日志往哪里写
+ * @details 子类可以是：控制台、文件、数据库等
+ */
+class LogAppender{
+public:
+    typedef std::shared_ptr<LogAppender> ptr;
+    // 务必使用虚析构函数，确保子类能正确释放资源
+    /*📌 黄金法则：
+        "如果一个类有虚函数，它的析构函数必须是虚的。"
+        "如果一个类可能作为基类，它的析构函数必须是虚的。"
+    */
+    virtual ~LogAppender() {};
+    /**
+     * @brief 写入日志接口
+     * @param[in] logger 日志器
+     * @param[in] level 日志级别
+     * @param[in] event 日志事件
+     * @details 子类必须实现该方法，负责将日志事件写入到具体的输出目标（如控制台、文件等）
+     */
+    virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level,LogEvent::ptr event) = 0;
+
+    void setFormatter(LogFormatter::ptr val) {m_formatter = val;}
+    LogFormatter::ptr getFormatter() const { return m_formatter; }
+
+    LogLevel::Level getLevel() const { return m_level; }
+    void setLevel(LogLevel::Level val) { m_level = val; }
+protected:
+    LogLevel::Level m_level; // 每个输出地可以有自己的级别过滤
+    LogFormatter::ptr m_formatter; // 每个输出地可以有自己的格式器
+};
+
+
+/**
+ * @brief 日志器：核心控制类，负责收集日志并分发到各个 Appender
+ * @details 继承 enable_shared_from_this 是为了在 log() 方法中安全地把 this 指针传给 Appender
+ */
+class Logger : public std::enable_shared_from_this<Logger>{
+public:
+    typedef std::shared_ptr<Logger> ptr;
+    /**
+     * @brief 构造函数
+     * @param[in] name 日志名称
+     * @details 默认名称为 "root"
+     */
+    Logger(const std::string& name = "root");
+    /**
+     * @brief 日志记录接口
+     * @param[in] level 日志级别
+     * @param[in] event 日志事件
+     * @details 负责将日志事件分发到所有已添加的 Appender
+     */
+    void log(LogLevel::Level level,LogEvent::ptr event);
+
+    void debug(LogEvent::ptr event);
+    void info(LogEvent::ptr event);
+    void warn(LogEvent::ptr event);
+    void error(LogEvent::ptr event);
+    void fatal(LogEvent::ptr event);
+    /**
+     * @brief 添加/删除 Appender
+     * @param[in] appender 日志输出目标
+     * @details 将指定的 Appender 添加到日志器的 Appender 列表中
+     */
+    void addAppender(LogAppender::ptr appender);
+    void delAppender(LogAppender::ptr appender);
+    LogLevel::Level getLevel() const { return m_level; }
+    void setLevel(LogLevel::Level val) { m_level = val; }
+    
+    const std::string& getName() const { return m_name; }
+private:
+    std::string m_name;                     // 日志名称
+    LogLevel::Level m_level;                // 日志级别
+    std::list<LogAppender::ptr> m_appenders;// Appender 列表（可以有多个输出地）
+    LogFormatter::ptr m_formatter;         // 日志格式器（默认格式器，当Appender没有设置格式器时使用）
+};
+
+/**
+ * @brief 输出到控制台的 Appender
+ */
+class StdoutLogAppender : public LogAppender{
+public:
+    typedef std::shared_ptr<StdoutLogAppender> ptr;
+    virtual void log(Logger::ptr logger, LogLevel::Level level,LogEvent::ptr event) override;
+
+};
+
+/**
+ * @brief 输出到文件的 Appender
+ */
+class FileLogAppender : public LogAppender{
+public:
+    typedef std::shared_ptr<FileLogAppender> ptr;
+    /**
+     * @brief 构造函数
+     * @param[in] filename 文件名
+     */
+    FileLogAppender(const std::string& filename);
+    virtual void log(Logger::ptr logger, LogLevel::Level level,LogEvent::ptr event) override;
+
+     /**
+     * @brief 重新打开日志文件
+     * @return 成功返回true
+     */
+    bool reopen();
+private:
+    std::string m_filename;
+    std::ofstream m_filestream;
+};
+
+/**
+ * @brief 日志管理器：负责管理所有日志器
+ */
+class LoggerManager{
+public:
+    LoggerManager();
+    /**
+     * @brief 获取日志器
+     * @param[in] name 日志名称
+     * @return 日志器指针
+     * @details 如果不存在指定名称的日志器，会创建一个新的日志器
+     */
+    Logger::ptr getLogger(const std::string& name);
+    /**
+     * @brief 初始化日志管理器
+     * @details 解析配置文件，初始化所有日志器
+     */
+    void init();
+private:
+    std::map<std::string, Logger::ptr> m_loggers;
+    Logger::ptr m_root;
+};
+
+// 单例模式：全局唯一的日志管理器
+typedef le0n::Singleton<LoggerManager> LoggerMgr;
+
+}
+
+#endif
