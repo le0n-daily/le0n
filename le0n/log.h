@@ -10,6 +10,7 @@
 #include <vector>
 #include <map>
 #include "singleton.h"
+#include "util.h"
 
 /**
  * @brief 使用流式方式将日志级别level的日志写入到logger
@@ -51,6 +52,8 @@
 #define LE0N_LOG_FMT_WARN(logger, fmt, ...) LE0N_LOG_FMT_LEVEL(logger, le0n::LogLevel::WARN, fmt, __VA_ARGS__)
 #define LE0N_LOG_FMT_ERROR(logger, fmt, ...) LE0N_LOG_FMT_LEVEL(logger, le0n::LogLevel::ERROR, fmt, __VA_ARGS__)
 #define LE0N_LOG_FMT_FATAL(logger, fmt, ...) LE0N_LOG_FMT_LEVEL(logger, le0n::LogLevel::FATAL, fmt, __VA_ARGS__)
+
+#define LE0N_LOG_ROOT() le0n::LoggerMgr::GetInstance()->getRoot()
 
 namespace le0n{
 
@@ -372,6 +375,7 @@ public:
      * @details 解析配置文件，初始化所有日志器
      */
     void init();
+    Logger::ptr getRoot() const { return m_root; }
 private:
     std::map<std::string, Logger::ptr> m_loggers;
     Logger::ptr m_root;
