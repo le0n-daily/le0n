@@ -1,12 +1,15 @@
 #ifndef LE0N_CONFIG_H
 #define LE0N_CONFIG_H
 
+#include <algorithm>
+#include <cctype>
 #include <exception>
 #include <memory>
 #include <sstream>
 #include <string>
 #include <boost/lexical_cast.hpp>
 #include "le0n/log.h"
+#include <yaml-cpp/yaml.h>
 
 namespace le0n{
 
@@ -19,7 +22,7 @@ public:
     ConfigVarBase(const std::string&name ,const std::string& description = "")
         : m_name(name)
         , m_description(description) {
-
+            std::transform(m_name.begin(), m_name.end(), m_name.begin(), ::tolower);
         }
     virtual ~ConfigVarBase() {}
 
@@ -100,7 +103,7 @@ public:
             // [BugFix] find_first_not_of 如果没找到非法字符会返回 string::npos (即 -1 或很大的数)。
             // C++ 中 if(-1) 为真，所以如果直接写 if(find_first_not_of(...)) 会导致合法名字也被判错。
             // 必须显式判断 != std::string::npos。
-            if(name.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._1234567890")
+            if(name.find_first_not_of("abcdefghijklmnopqrstuvwxyz._1234567890")
                     != std::string::npos){
                 LE0N_LOG_ERROR(LE0N_LOG_ROOT()) << "Lookup name invalid" <<name ;
                 throw std::invalid_argument(name);
@@ -111,6 +114,7 @@ public:
             return v;
     }
 
+    // 查找配置项，如果存在且类型匹配则返回，否则返回 nullptr
     template<class T>
     static typename ConfigVar<T>::ptr Lookup(const std::string& name){
         auto it = s_datas.find(name);
@@ -119,6 +123,12 @@ public:
         }
         return std::dynamic_pointer_cast<ConfigVar<T> >(it->second);
     }
+
+    // 加载 YAML 配置文件，并覆盖已有配置
+    static void LoadFromYaml(const YAML::Node& root);
+
+    // 查找基类指针 (内部使用)
+    static ConfigVarBase::ptr LookupBase(const std::string& name);
 private:
     static ConfigVarMap s_datas;
 };
