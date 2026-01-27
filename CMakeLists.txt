@@ -18,6 +18,7 @@ set(LIB_SRC
 )
 
 add_library(le0n SHARED ${LIB_SRC})
+target_link_libraries(le0n yaml-cpp pthread)
 
 # 建议: 尽量不要将可执行文件命名为 "test"，因为 "make test" 是 CMake 的保留命令，容易冲突。我改成了 "le0n_test"
 add_executable(test_config tests/test_config.cc)

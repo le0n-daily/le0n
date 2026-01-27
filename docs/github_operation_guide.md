@@ -43,6 +43,14 @@ git commit -m "你的提交信息，例如：完成日志格式化器开发"
 git push origin main
 ```
 
+### 方式 C：一行命令极速同步（常用）
+
+如果你赶时间，可以直接使用这一行命令完成所有操作：
+
+```bash
+git add . && git commit -m "update" && git push origin main
+```
+
 ---
 
 ## 3. 开发与调试指南
@@ -73,11 +81,9 @@ g++ -std=c++11 -g -Wall -rdynamic le0n/log.cc le0n/util.cc tests/test.cc -o le0n
 GitHub：https://github.com/le0n-daily/le0n
 
 当前进度：
-1. 已实现 LogLevel, LogEvent, LogFormatter, Logger, LogAppender 等核心类。
-2. 已实现 StdoutLogAppender 和 FileLogAppender。
-3. 已实现流式日志 (<<) 和 格式化日志 (printf style) 的宏定义。
-4. 已通过 RAII (LogEventWrap) 实现日志自动提交。
-5. 环境已配置好 Git 和 .gitignore。
+1. **日志模块**：已实现 LogLevel, LogEvent, LogFormatter, Logger, LogAppender 等核心类；支持 stdout/file 输出；支持流式/格式化日志宏；RAII 自动提交。
+2. **配置模块**：已实现 ConfigVarBase, ConfigVar, Config 核心类；引入 yaml-cpp 库；实现配置加载与解析（开发中）。
+3. **环境**：已配置好 CMake, Git, .gitignore 和 VSCode 调试环境。
 
 请基于以上上下文辅助我进行后续开发。
 如果我让你同步代码，请使用 MCP 工具推送到上述 GitHub 仓库。

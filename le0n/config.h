@@ -33,6 +33,10 @@ protected:
     std::string m_description;  // 配置参数的描述 (help)
 };
 
+// 具体配置变量类 (模板类)
+// 作用：保存具体的配置值(m_val)，并实现 ConfigVarBase 的接口。
+// T: 具体类型 (int, float, vector<int> 等)
+// 核心功能：提供 toString() 和 fromString() 实现类型转换。
 template <class T> //模板的本质是 “代码生成器” —— 编译器会为每个使用的具体类型“实例化”出一个独立的类。
 class ConfigVar : public ConfigVarBase{
 public:
@@ -75,6 +79,11 @@ private:
     T m_val;
 };
 
+// 配置管理类
+// 作用：管理所有的配置项 (s_datas)。
+// 核心功能：
+// 1. Lookup: 定义/查找配置项。
+// 2. 静态成员 s_datas: 存放所有配置项的 Map (key=配置名, value=配置项基类指针)。
 class Config {
 public:
     typedef std::map<std::string, ConfigVarBase::ptr> ConfigVarMap;
